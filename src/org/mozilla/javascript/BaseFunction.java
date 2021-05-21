@@ -137,9 +137,13 @@ public class BaseFunction extends IdScriptableObject implements Function {
         int attr;
         switch (id) {
             case Id_length:
+                attr = lengthPropertyAttributes;
+                break;
             case Id_arity:
-            case Id_name:
                 attr = DONTENUM | READONLY | PERMANENT;
+                break;
+            case Id_name:
+                attr = namePropertyAttributes;
                 break;
             case Id_prototype:
                 // some functions such as built-ins don't have a prototype property
@@ -178,11 +182,11 @@ public class BaseFunction extends IdScriptableObject implements Function {
     protected Object getInstanceIdValue(int id) {
         switch (id) {
             case Id_length:
-                return ScriptRuntime.wrapInt(getLength());
+                return lengthDeleted ? NOT_FOUND : ScriptRuntime.wrapInt(getLength());
             case Id_arity:
                 return ScriptRuntime.wrapInt(getArity());
             case Id_name:
-                return getFunctionName();
+                return nameDeleted ? NOT_FOUND : getFunctionName();
             case Id_prototype:
                 return getPrototypeProperty();
             case Id_arguments:
@@ -211,8 +215,16 @@ public class BaseFunction extends IdScriptableObject implements Function {
                 }
                 return;
             case Id_name:
+                if (value == NOT_FOUND) {
+                    nameDeleted = true;
+                }
+                return;
             case Id_arity:
+                return;
             case Id_length:
+                if (value == NOT_FOUND) {
+                    lengthDeleted = true;
+                }
                 return;
         }
         super.setInstanceIdValue(id, value);
@@ -226,6 +238,12 @@ public class BaseFunction extends IdScriptableObject implements Function {
                 return;
             case Id_arguments:
                 argumentsAttributes = attr;
+                return;
+            case Id_name:
+                namePropertyAttributes = attr;
+                return;
+            case Id_length:
+                lengthPropertyAttributes = attr;
                 return;
         }
         super.setInstanceIdAttributes(id, attr);
@@ -394,7 +412,7 @@ public class BaseFunction extends IdScriptableObject implements Function {
                 // It is program error not to return Scriptable from
                 // the call method if createObject returns null.
                 throw new IllegalStateException(
-                        "Bad implementaion of call as constructor, name="
+                        "Bad implementation of call as constructor, name="
                                 + getFunctionName()
                                 + " in "
                                 + getClass().getName());
@@ -636,4 +654,8 @@ public class BaseFunction extends IdScriptableObject implements Function {
     // see ECMA 15.3.5.2
     private int prototypePropertyAttributes = PERMANENT | DONTENUM;
     private int argumentsAttributes = PERMANENT | DONTENUM;
+    private int namePropertyAttributes = DONTENUM | READONLY | PERMANENT;
+    private int lengthPropertyAttributes = DONTENUM | READONLY | PERMANENT;
+    private boolean nameDeleted = false;
+    private boolean lengthDeleted = false;
 }
